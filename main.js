@@ -99,56 +99,6 @@ function collectRenderableFiles(vault, scope) {
     return RENDERABLE_EXTS.has(extOf(f.name));
   });
 }
-async function findReferences(app, target, scope) {
-  const { vault } = app;
-  const baseName = target.name.replace(/\.[^.]+$/, "");
-  const fullName = target.name;
-  const candidates = collectRenderableFiles(vault, scope).filter(
-    (f) => f.path !== target.path
-  );
-  const results = [];
-  for (const file of candidates) {
-    let content;
-    try {
-      content = await vault.cachedRead(file);
-    } catch {
-      continue;
-    }
-    if (!content) continue;
-    const patterns = [
-      new RegExp(`\\[\\[${escapeRegExp(baseName)}(?:\\|[^\\]]+)?\\]\\]`),
-      new RegExp(`\\[\\[${escapeRegExp(fullName)}(?:\\|[^\\]]+)?\\]\\]`),
-      new RegExp(`\\]\\([^)]*${escapeRegExp(target.path)}[^)]*\\)`),
-      new RegExp(`\\]\\([^)]*${escapeRegExp(fullName)}[^)]*\\)`),
-      new RegExp(`href=["'][^"']*${escapeRegExp(fullName)}[^"']*["']`)
-    ];
-    let hit = -1;
-    let hitRaw = "";
-    for (const re of patterns) {
-      const m = re.exec(content);
-      if (m) {
-        hit = m.index;
-        hitRaw = m[0];
-        break;
-      }
-    }
-    if (hit >= 0) {
-      const start = Math.max(0, hit - 30);
-      const end = Math.min(content.length, hit + hitRaw.length + 30);
-      const context = content.substring(start, end).replace(/\n/g, " ").trim();
-      results.push({
-        name: file.name,
-        path: file.path,
-        context,
-        ext: extOf(file.name)
-      });
-    }
-  }
-  return results;
-}
-function escapeRegExp(s) {
-  return s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-}
 function folderOf(filePath) {
   const parts = filePath.split("/");
   return parts.length > 1 ? parts[parts.length - 2] : "";
@@ -167,6 +117,15 @@ function renderMarkdown(md) {
       if (idx === -1) return `<span class="fm-item fm-plain">${esc(line)}</span>`;
       const key = line.substring(0, idx).trim();
       let val = line.substring(idx + 1).trim();
+      if (val.startsWith('"') && val.endsWith('"') || val.startsWith("'") && val.endsWith("'")) {
+        val = val.slice(1, -1);
+      }
+      if (val.startsWith("[") && val.endsWith("]")) {
+        const inner = val.slice(1, -1);
+        const tags = inner.split(",").map((t) => t.trim()).filter(Boolean);
+        const chips = tags.map((t) => `<span class="fm-tag">${esc(t)}</span>`).join(" ");
+        return `<span class="fm-item"><span class="fm-key">${esc(key)}</span><span class="fm-val">${chips}</span></span>`;
+      }
       if (val.length > MAX_FM_VAL_LEN) {
         val = val.substring(0, MAX_FM_VAL_LEN) + "\u2026";
       }
@@ -350,34 +309,6 @@ function wrapParagraphs(text) {
 function esc(s) {
   return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
-function extractTags(md) {
-  const tags = /* @__PURE__ */ new Set();
-  const re = /(^|\s)#([\u4e00-\u9fa5A-Za-z0-9_\/]+)/g;
-  let m;
-  while (m = re.exec(md)) {
-    tags.add(m[2]);
-  }
-  return Array.from(tags);
-}
-function extractLinks(md) {
-  const out = [];
-  const wiki = /\[\[([^\]]+)\]\]/g;
-  let m;
-  while (m = wiki.exec(md)) {
-    const target = m[1].split("|")[0].trim();
-    out.push({ target, raw: m[0], context: snippet(md, m.index) });
-  }
-  const mdlink = /\[([^\]]+)\]\(([^)]+)\)/g;
-  while (m = mdlink.exec(md)) {
-    out.push({ target: m[2].trim(), raw: m[0], context: snippet(md, m.index) });
-  }
-  return out;
-}
-function snippet(text, index) {
-  const start = Math.max(0, index - 30);
-  const end = Math.min(text.length, index + 60);
-  return text.substring(start, end).replace(/\n/g, " ").trim();
-}
 
 // src/htmlTemplate.ts
 function buildMarkdownDoc(renderedHtml) {
@@ -437,11 +368,12 @@ function buildMarkdownDoc(renderedHtml) {
   .wikilink { color: var(--brand); background: rgba(27,54,93,0.07); padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: 500; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   body { animation: fadeIn 0.4s ease-out; }
-  .frontmatter { background: var(--ivory); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 1.5em; display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: 0.88em; }
-  .fm-item { display: inline-flex; align-items: baseline; gap: 6px; }
+  .frontmatter { background: var(--ivory); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 1.5em; display: flex; flex-direction: column; gap: 6px; font-size: 0.88em; }
+  .fm-item { display: flex; align-items: baseline; gap: 8px; }
   .fm-plain { color: var(--dark-warm); }
-  .fm-key { color: var(--stone); font-weight: 500; min-width: 52px; text-align: right; }
-  .fm-val { color: var(--dark-warm); }
+  .fm-key { color: var(--stone); font-weight: 500; min-width: 60px; text-align: right; flex-shrink: 0; }
+  .fm-val { color: var(--dark-warm); word-break: break-word; }
+  .fm-tag { display: inline-block; color: var(--brand-light); background: rgba(45,90,138,0.08); padding: 1px 8px; border-radius: 4px; font-size: 0.92em; margin: 1px 2px; }
   .tag { color: var(--brand-light); background: rgba(45,90,138,0.08); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; white-space: nowrap; }
   h3.section-num { color: var(--near-black); font-size: 1.2em; margin-top: 1.8em; margin-bottom: 0.4em; padding-bottom: 0.15em; border-bottom: 1px solid var(--warm-sand); }
   li.indent-1, li.indent-2, li.indent-3 { list-style-position: outside; }
@@ -625,13 +557,10 @@ var InkwellView = class extends import_obsidian2.ItemView {
     this.currentFile = null;
     this.mode = "render";
     this.htmlOnly = false;
-    this.rightOpen = true;
-    this.rightTab = "refs";
     this.siblings = [];
     this.siblingIndex = -1;
     this.sidebarWidth = 240;
     this.resizing = false;
-    this.rightTabBtns = {};
     // ---- editing state ----
     this.dirty = false;
     this.sourceArea = null;
@@ -651,7 +580,6 @@ var InkwellView = class extends import_obsidian2.ItemView {
   async onOpen() {
     const s = this.plugin.settings;
     this.htmlOnly = s.htmlOnlyByDefault;
-    this.rightOpen = s.rightPanelOpen;
     this.sidebarWidth = s.sidebarWidth;
     this.buildLayout();
     this.bindKeyboard();
@@ -676,11 +604,6 @@ var InkwellView = class extends import_obsidian2.ItemView {
         });
         bar.createDiv({ cls: "inkwell-topbar-actions" }, (actions) => {
           this.iconBtn(actions, "search", "\u641C\u7D22 (\u2318K)", () => this.openSearch());
-          this.iconBtn(actions, this.rightOpen ? "panel-right-close" : "panel-right-open", "\u5207\u6362\u53F3\u4FA7\u9762\u677F", (btn) => {
-            this.rightOpen = !this.rightOpen;
-            this.rightPanel.toggleClass("hidden", !this.rightOpen);
-            (0, import_obsidian2.setIcon)(btn, this.rightOpen ? "panel-right-close" : "panel-right-open");
-          });
         });
       });
       root.createDiv({ cls: "inkwell-main" }, (main) => {
@@ -711,8 +634,6 @@ var InkwellView = class extends import_obsidian2.ItemView {
           this.bottomBar = content.createDiv({ cls: "inkwell-bottombar hidden" });
           this.buildBottomBar();
         });
-        this.rightPanel = main.createDiv({ cls: "inkwell-right-panel" + (this.rightOpen ? "" : " hidden") });
-        this.buildRightPanel();
       });
     });
   }
@@ -742,32 +663,6 @@ var InkwellView = class extends import_obsidian2.ItemView {
       this.sourceBtn = views.createEl("button", { cls: "inkwell-view-btn", text: "\u6E90\u7801" });
       this.sourceBtn.addEventListener("click", () => this.setMode("source"));
     });
-  }
-  buildRightPanel() {
-    this.rightPanel.createDiv({ cls: "inkwell-panel-header" }, (header) => {
-      header.createSpan({ text: "\u53CD\u94FE & \u6807\u7B7E" });
-      this.iconBtn(header, "panel-right-close", "\u5173\u95ED\u9762\u677F", (btn) => {
-        this.rightOpen = false;
-        this.rightPanel.addClass("hidden");
-        (0, import_obsidian2.setIcon)(btn, "panel-right-close");
-        const topToggle = this.contentEl.querySelector(".inkwell-topbar-actions button:nth-child(2)");
-        if (topToggle) (0, import_obsidian2.setIcon)(topToggle, "panel-right-open");
-      });
-    });
-    const tabs = this.rightPanel.createDiv({ cls: "inkwell-panel-tabs" });
-    for (const [key, label] of [["refs", "\u5F15\u7528"], ["out", "\u51FA\u94FE"], ["tags", "\u6807\u7B7E"]]) {
-      const btn = tabs.createEl("button", { cls: "inkwell-panel-tab" + (key === this.rightTab ? " active" : ""), text: label });
-      btn.addEventListener("click", () => {
-        this.rightTab = key;
-        for (const k of Object.keys(this.rightTabBtns)) {
-          this.rightTabBtns[k].toggleClass("active", k === key);
-        }
-        this.renderRightPanel();
-      });
-      this.rightTabBtns[key] = btn;
-    }
-    this.rightContent = this.rightPanel.createDiv({ cls: "inkwell-panel-content" });
-    this.renderRightPanelPlaceholder();
   }
   // ================================================================
   // Tree
@@ -867,7 +762,6 @@ var InkwellView = class extends import_obsidian2.ItemView {
       this.updateBottomBar();
       await this.computeSiblings(path);
       this.renderTree();
-      this.renderRightPanel();
     } catch (e) {
       new import_obsidian2.Notice(`\u65E0\u6CD5\u6253\u5F00 ${name}: ${String(e)}`);
     }
@@ -1006,7 +900,6 @@ var InkwellView = class extends import_obsidian2.ItemView {
       this.updateBadge();
       if (this.saveBtn) this.saveBtn.disabled = true;
       new import_obsidian2.Notice(`\u5DF2\u4FDD\u5B58 ${this.currentFile.name}`, 1500);
-      this.renderRightPanel();
     } catch (e) {
       new import_obsidian2.Notice(`\u4FDD\u5B58\u5931\u8D25: ${String(e)}`);
     }
@@ -1055,93 +948,6 @@ var InkwellView = class extends import_obsidian2.ItemView {
     this.nextBtn.disabled = this.siblingIndex >= this.siblings.length - 1;
   }
   // ================================================================
-  // Right panel
-  // ================================================================
-  renderRightPanelPlaceholder() {
-    this.rightContent.empty();
-    if (!this.currentFile) {
-      this.rightContent.createDiv({ cls: "inkwell-panel-hint", text: "\u6253\u5F00\u6587\u4EF6\u540E\u67E5\u770B\u5F15\u7528\u5173\u7CFB" });
-    } else {
-      this.rightContent.createDiv({ cls: "inkwell-panel-hint", text: "\u52A0\u8F7D\u4E2D\u2026" });
-    }
-  }
-  async renderRightPanel() {
-    if (!this.currentFile) {
-      this.renderRightPanelPlaceholder();
-      return;
-    }
-    this.rightContent.empty();
-    if (this.rightTab === "tags") {
-      const tags = extractTags(this.currentFile.content);
-      if (tags.length === 0) {
-        this.rightContent.createDiv({ cls: "inkwell-panel-hint", text: "\u5F53\u524D\u6587\u4EF6\u6CA1\u6709\u6807\u7B7E" });
-        return;
-      }
-      const wrap = this.rightContent.createDiv({ cls: "inkwell-tag-cloud" });
-      for (const tag of tags) {
-        wrap.createEl("span", { cls: "inkwell-tag-chip", text: `#${tag}` });
-      }
-      return;
-    }
-    if (this.rightTab === "out") {
-      const links = extractLinks(this.currentFile.content);
-      if (links.length === 0) {
-        this.rightContent.createDiv({ cls: "inkwell-panel-hint", text: "\u5F53\u524D\u6587\u4EF6\u6CA1\u6709\u51FA\u94FE" });
-        return;
-      }
-      for (const link of links) {
-        const card = this.rightContent.createDiv({ cls: "inkwell-backlink-card" });
-        card.createDiv({ cls: "inkwell-backlink-name", text: link.target });
-        card.createDiv({ cls: "inkwell-backlink-context", text: link.context });
-        card.addEventListener("click", () => this.openByName(link.target));
-      }
-      return;
-    }
-    this.rightContent.createDiv({ cls: "inkwell-panel-hint", text: "\u641C\u7D22\u5F15\u7528\u4E2D\u2026" });
-    try {
-      const refs = await findReferences(
-        this.app,
-        { name: this.currentFile.name, path: this.currentFile.path },
-        this.plugin.settings.defaultFolder || void 0
-      );
-      this.rightContent.empty();
-      if (refs.length === 0) {
-        this.rightContent.createDiv({ cls: "inkwell-panel-hint", text: "\u6CA1\u6709\u5176\u4ED6\u6587\u4EF6\u5F15\u7528\u6B64\u6587\u4EF6" });
-        return;
-      }
-      for (const ref of refs) {
-        const card = this.rightContent.createDiv({ cls: "inkwell-backlink-card" });
-        card.createDiv({ cls: "inkwell-backlink-name", text: ref.name });
-        card.createDiv({ cls: "inkwell-backlink-context", text: ref.context });
-        card.createDiv({ cls: "inkwell-backlink-path", text: ref.path });
-        card.addEventListener("click", () => this.openByPath(ref.path));
-      }
-    } catch {
-      this.rightContent.empty();
-      this.rightContent.createDiv({ cls: "inkwell-panel-hint", text: "\u5F15\u7528\u641C\u7D22\u5931\u8D25" });
-    }
-  }
-  async openByName(name) {
-    const cleaned = name.replace(/\.[^.]+$/, "");
-    const file = this.app.vault.getFiles().find((f) => {
-      const base = f.name.replace(/\.[^.]+$/, "");
-      return base === cleaned || f.name === name;
-    });
-    if (file) {
-      await this.openFile(file);
-    } else {
-      new import_obsidian2.Notice(`\u672A\u627E\u5230\u6587\u4EF6: ${name}`);
-    }
-  }
-  async openByPath(path) {
-    const file = this.app.vault.getAbstractFileByPath(path);
-    if (file instanceof import_obsidian2.TFile) {
-      await this.openFile(file);
-    } else {
-      new import_obsidian2.Notice(`\u672A\u627E\u5230\u6587\u4EF6: ${path}`);
-    }
-  }
-  // ================================================================
   // Search / refresh / resize
   // ================================================================
   openSearch() {
@@ -1160,7 +966,6 @@ var InkwellView = class extends import_obsidian2.ItemView {
         const content = await readFileContent(this.app.vault.adapter, this.currentFile.path);
         this.currentFile.content = content;
         this.renderContent();
-        this.renderRightPanel();
       } catch {
       }
     }
@@ -1239,7 +1044,6 @@ function escapeHtml(s) {
 var import_obsidian3 = require("obsidian");
 var DEFAULT_SETTINGS = {
   defaultFolder: "",
-  rightPanelOpen: true,
   htmlOnlyByDefault: false,
   sandboxMode: "full",
   refreshDebounce: 1e3,
@@ -1263,12 +1067,6 @@ var InkwellSettingTab = class extends import_obsidian3.PluginSettingTab {
     new import_obsidian3.Setting(containerEl).setName("Default folder").setDesc("Vault-relative folder to scope the file tree on open (empty = whole vault).").addText(
       (text) => text.setPlaceholder("e.g. Notes").setValue(this.plugin.settings.defaultFolder).onChange(async (value) => {
         this.plugin.settings.defaultFolder = value.trim();
-        await this.plugin.saveSettings();
-      })
-    );
-    new import_obsidian3.Setting(containerEl).setName("Open references panel on launch").setDesc("Show the backlinks / outlinks / tags panel by default.").addToggle(
-      (toggle) => toggle.setValue(this.plugin.settings.rightPanelOpen).onChange(async (value) => {
-        this.plugin.settings.rightPanelOpen = value;
         await this.plugin.saveSettings();
       })
     );
@@ -1326,12 +1124,8 @@ var InkwellSettingTab = class extends import_obsidian3.PluginSettingTab {
 var InkwellPlugin = class extends import_obsidian4.Plugin {
   async onload() {
     await this.loadSettings();
-    (0, import_obsidian4.addIcon)(
-      "inkwell",
-      `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg>`
-    );
     this.registerView(INKWELL_VIEW_TYPE, (leaf) => new InkwellView(leaf, this));
-    this.addRibbonIcon("inkwell", "Open Inkwell", () => {
+    this.addRibbonIcon("book-open", "Open Inkwell", () => {
       void this.activateView();
     });
     this.addStatusBarItem().setText("Inkwell ready");
