@@ -6,8 +6,8 @@
 import { ItemView, WorkspaceLeaf, setIcon, TFile, Notice, debounce } from 'obsidian';
 import type InkwellPlugin from './main';
 import { FileNode, OpenFile, extOf, classifyFile, RENDERABLE_EXTS } from './types';
-import { listDirectory, readFileContent, findReferences, folderOf, flattenTree } from './vault';
-import { renderMarkdown, extractTags, extractLinks } from './markdown';
+import { listDirectory, readFileContent, folderOf } from './vault';
+import { renderMarkdown } from './markdown';
 import { buildMarkdownDoc, buildYamlDoc } from './htmlTemplate';
 import { InkwellSearchModal } from './search';
 
@@ -31,8 +31,6 @@ export class InkwellView extends ItemView {
   private currentFile: OpenFile | null = null;
   private mode: 'render' | 'source' = 'render';
   private htmlOnly = false;
-  private rightOpen = true;
-  private rightTab: 'refs' | 'out' | 'tags' = 'refs';
   private siblings: FileNode[] = [];
   private siblingIndex = -1;
   private sidebarWidth = 240;
@@ -48,9 +46,6 @@ export class InkwellView extends ItemView {
   private docNavPosition!: HTMLElement;
   private prevBtn!: HTMLButtonElement;
   private nextBtn!: HTMLButtonElement;
-  private rightPanel!: HTMLElement;
-  private rightContent!: HTMLElement;
-  private rightTabBtns: Record<string, HTMLButtonElement> = {};
   private filterBtn!: HTMLButtonElement;
   private renderBtn!: HTMLButtonElement;
   private sourceBtn!: HTMLButtonElement;
@@ -82,7 +77,6 @@ export class InkwellView extends ItemView {
   async onOpen(): Promise<void> {
     const s = this.plugin.settings;
     this.htmlOnly = s.htmlOnlyByDefault;
-    this.rightOpen = s.rightPanelOpen;
     this.sidebarWidth = s.sidebarWidth;
 
     this.buildLayout();
@@ -114,11 +108,6 @@ export class InkwellView extends ItemView {
         });
         bar.createDiv({ cls: 'inkwell-topbar-actions' }, (actions) => {
           this.iconBtn(actions, 'search', '搜索 (⌘K)', () => this.openSearch());
-          this.iconBtn(actions, this.rightOpen ? 'panel-right-close' : 'panel-right-open', '切换右侧面板', (btn) => {
-            this.rightOpen = !this.rightOpen;
-            this.rightPanel.toggleClass('hidden', !this.rightOpen);
-            setIcon(btn, this.rightOpen ? 'panel-right-close' : 'panel-right-open');
-          });
         });
       });
 
@@ -157,10 +146,6 @@ export class InkwellView extends ItemView {
           this.bottomBar = content.createDiv({ cls: 'inkwell-bottombar hidden' });
           this.buildBottomBar();
         });
-
-        // right panel
-        this.rightPanel = main.createDiv({ cls: 'inkwell-right-panel' + (this.rightOpen ? '' : ' hidden') });
-        this.buildRightPanel();
       });
     });
   }
@@ -195,34 +180,6 @@ export class InkwellView extends ItemView {
       this.sourceBtn = views.createEl('button', { cls: 'inkwell-view-btn', text: '源码' });
       this.sourceBtn.addEventListener('click', () => this.setMode('source'));
     });
-  }
-
-  private buildRightPanel(): void {
-    this.rightPanel.createDiv({ cls: 'inkwell-panel-header' }, (header) => {
-      header.createSpan({ text: '反链 & 标签' });
-      this.iconBtn(header, 'panel-right-close', '关闭面板', (btn) => {
-        this.rightOpen = false;
-        this.rightPanel.addClass('hidden');
-        setIcon(btn, 'panel-right-close');
-        // also flip the topbar toggle icon
-        const topToggle = this.contentEl.querySelector('.inkwell-topbar-actions button:nth-child(2)') as HTMLElement | null;
-        if (topToggle) setIcon(topToggle, 'panel-right-open');
-      });
-    });
-    const tabs = this.rightPanel.createDiv({ cls: 'inkwell-panel-tabs' });
-    for (const [key, label] of [['refs', '引用'], ['out', '出链'], ['tags', '标签']] as const) {
-      const btn = tabs.createEl('button', { cls: 'inkwell-panel-tab' + (key === this.rightTab ? ' active' : ''), text: label });
-      btn.addEventListener('click', () => {
-        this.rightTab = key;
-        for (const k of Object.keys(this.rightTabBtns)) {
-          this.rightTabBtns[k].toggleClass('active', k === key);
-        }
-        this.renderRightPanel();
-      });
-      this.rightTabBtns[key] = btn;
-    }
-    this.rightContent = this.rightPanel.createDiv({ cls: 'inkwell-panel-content' });
-    this.renderRightPanelPlaceholder();
   }
 
   // ================================================================
@@ -334,7 +291,6 @@ export class InkwellView extends ItemView {
       this.updateBottomBar();
       await this.computeSiblings(path);
       this.renderTree(); // refresh active highlight
-      this.renderRightPanel();
     } catch (e) {
       new Notice(`无法打开 ${name}: ${String(e)}`);
     }
@@ -497,7 +453,6 @@ export class InkwellView extends ItemView {
       this.updateBadge();
       if (this.saveBtn) this.saveBtn.disabled = true;
       new Notice(`已保存 ${this.currentFile.name}`, 1500);
-      this.renderRightPanel();
     } catch (e) {
       new Notice(`保存失败: ${String(e)}`);
     }
@@ -552,102 +507,6 @@ export class InkwellView extends ItemView {
   }
 
   // ================================================================
-  // Right panel
-  // ================================================================
-
-  private renderRightPanelPlaceholder(): void {
-    this.rightContent.empty();
-    if (!this.currentFile) {
-      this.rightContent.createDiv({ cls: 'inkwell-panel-hint', text: '打开文件后查看引用关系' });
-    } else {
-      this.rightContent.createDiv({ cls: 'inkwell-panel-hint', text: '加载中…' });
-    }
-  }
-
-  private async renderRightPanel(): Promise<void> {
-    if (!this.currentFile) {
-      this.renderRightPanelPlaceholder();
-      return;
-    }
-    this.rightContent.empty();
-
-    if (this.rightTab === 'tags') {
-      const tags = extractTags(this.currentFile.content);
-      if (tags.length === 0) {
-        this.rightContent.createDiv({ cls: 'inkwell-panel-hint', text: '当前文件没有标签' });
-        return;
-      }
-      const wrap = this.rightContent.createDiv({ cls: 'inkwell-tag-cloud' });
-      for (const tag of tags) {
-        wrap.createEl('span', { cls: 'inkwell-tag-chip', text: `#${tag}` });
-      }
-      return;
-    }
-
-    if (this.rightTab === 'out') {
-      const links = extractLinks(this.currentFile.content);
-      if (links.length === 0) {
-        this.rightContent.createDiv({ cls: 'inkwell-panel-hint', text: '当前文件没有出链' });
-        return;
-      }
-      for (const link of links) {
-        const card = this.rightContent.createDiv({ cls: 'inkwell-backlink-card' });
-        card.createDiv({ cls: 'inkwell-backlink-name', text: link.target });
-        card.createDiv({ cls: 'inkwell-backlink-context', text: link.context });
-        card.addEventListener('click', () => this.openByName(link.target));
-      }
-      return;
-    }
-
-    // refs (backlinks)
-    this.rightContent.createDiv({ cls: 'inkwell-panel-hint', text: '搜索引用中…' });
-    try {
-      const refs = await findReferences(
-        this.app,
-        { name: this.currentFile.name, path: this.currentFile.path },
-        this.plugin.settings.defaultFolder || undefined,
-      );
-      this.rightContent.empty();
-      if (refs.length === 0) {
-        this.rightContent.createDiv({ cls: 'inkwell-panel-hint', text: '没有其他文件引用此文件' });
-        return;
-      }
-      for (const ref of refs) {
-        const card = this.rightContent.createDiv({ cls: 'inkwell-backlink-card' });
-        card.createDiv({ cls: 'inkwell-backlink-name', text: ref.name });
-        card.createDiv({ cls: 'inkwell-backlink-context', text: ref.context });
-        card.createDiv({ cls: 'inkwell-backlink-path', text: ref.path });
-        card.addEventListener('click', () => this.openByPath(ref.path));
-      }
-    } catch {
-      this.rightContent.empty();
-      this.rightContent.createDiv({ cls: 'inkwell-panel-hint', text: '引用搜索失败' });
-    }
-  }
-
-  private async openByName(name: string): Promise<void> {
-    const cleaned = name.replace(/\.[^.]+$/, '');
-    const file = this.app.vault.getFiles().find((f) => {
-      const base = f.name.replace(/\.[^.]+$/, '');
-      return base === cleaned || f.name === name;
-    });
-    if (file) {
-      await this.openFile(file);
-    } else {
-      new Notice(`未找到文件: ${name}`);
-    }
-  }
-
-  private async openByPath(path: string): Promise<void> {
-    const file = this.app.vault.getAbstractFileByPath(path);
-    if (file instanceof TFile) {
-      await this.openFile(file);
-    } else {
-      new Notice(`未找到文件: ${path}`);
-    }
-  }
-
-  // ================================================================
   // Search / refresh / resize
   // ================================================================
 
@@ -669,7 +528,6 @@ export class InkwellView extends ItemView {
         const content = await readFileContent(this.app.vault.adapter, this.currentFile.path);
         this.currentFile.content = content;
         this.renderContent();
-        this.renderRightPanel();
       } catch {
         // file may have been deleted
       }
