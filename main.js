@@ -163,13 +163,13 @@ function renderMarkdown(md) {
     if (lines.length === 0) return "";
     const items = lines.map((line) => {
       const idx = line.indexOf(":");
-      if (idx === -1) return line;
+      if (idx === -1) return `<span class="fm-item fm-plain">${esc(line)}</span>`;
       const key = line.substring(0, idx).trim();
       let val = line.substring(idx + 1).trim();
       if (val.length > MAX_FM_VAL_LEN) {
         val = val.substring(0, MAX_FM_VAL_LEN) + "\u2026";
       }
-      return `<span class="fm-key">${esc(key)}</span><span class="fm-val">${esc(val)}</span>`;
+      return `<span class="fm-item"><span class="fm-key">${esc(key)}</span><span class="fm-val">${esc(val)}</span></span>`;
     }).join("");
     return `<div class="frontmatter">${items}</div>`;
   });
@@ -432,7 +432,9 @@ function buildMarkdownDoc(renderedHtml) {
   .wikilink { color: var(--brand); background: rgba(27,54,93,0.07); padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: 500; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   body { animation: fadeIn 0.4s ease-out; }
-  .frontmatter { background: var(--ivory); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 1.5em; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 0.88em; }
+  .frontmatter { background: var(--ivory); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 1.5em; display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: 0.88em; }
+  .fm-item { display: inline-flex; align-items: baseline; gap: 6px; }
+  .fm-plain { color: var(--dark-warm); }
   .fm-key { color: var(--stone); font-weight: 500; min-width: 52px; text-align: right; }
   .fm-val { color: var(--dark-warm); }
   .tag { color: var(--brand-light); background: rgba(45,90,138,0.08); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; white-space: nowrap; }

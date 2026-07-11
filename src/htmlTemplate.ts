@@ -61,7 +61,9 @@ export function buildMarkdownDoc(renderedHtml: string): string {
   .wikilink { color: var(--brand); background: rgba(27,54,93,0.07); padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: 500; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   body { animation: fadeIn 0.4s ease-out; }
-  .frontmatter { background: var(--ivory); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 1.5em; display: flex; flex-wrap: wrap; gap: 6px 20px; font-size: 0.88em; }
+  .frontmatter { background: var(--ivory); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 1.5em; display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: 0.88em; }
+  .fm-item { display: inline-flex; align-items: baseline; gap: 6px; }
+  .fm-plain { color: var(--dark-warm); }
   .fm-key { color: var(--stone); font-weight: 500; min-width: 52px; text-align: right; }
   .fm-val { color: var(--dark-warm); }
   .tag { color: var(--brand-light); background: rgba(45,90,138,0.08); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; white-space: nowrap; }

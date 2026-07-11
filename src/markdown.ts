@@ -16,13 +16,13 @@ export function renderMarkdown(md: string): string {
     const items = lines
       .map((line: string) => {
         const idx = line.indexOf(':');
-        if (idx === -1) return line;
+        if (idx === -1) return `<span class="fm-item fm-plain">${esc(line)}</span>`;
         const key = line.substring(0, idx).trim();
         let val = line.substring(idx + 1).trim();
         if (val.length > MAX_FM_VAL_LEN) {
           val = val.substring(0, MAX_FM_VAL_LEN) + '\u2026';
         }
-        return `<span class="fm-key">${esc(key)}</span><span class="fm-val">${esc(val)}</span>`;
+        return `<span class="fm-item"><span class="fm-key">${esc(key)}</span><span class="fm-val">${esc(val)}</span></span>`;
       })
       .join('');
     return `<div class="frontmatter">${items}</div>`;

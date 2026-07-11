@@ -1,5 +1,7 @@
 # Inkwell for Obsidian
 
+**English** | [中文](./README.zh-CN.md)
+
 A faithful port of the [Inkwell](https://github.com/bellazhuang417-cyber/inkwell) desktop reader into an Obsidian plugin. Inkwell renders local **.html**, **.md**, and **.yaml** files natively — HTML files render *exactly as in a browser* inside a sandboxed iframe, while Markdown and YAML render as styled previews.
 
 Built for people with large collections of AI-generated HTML files (reports, visualizations, card notes) that Obsidian can't open and Finder can't preview — now readable directly inside your vault.
