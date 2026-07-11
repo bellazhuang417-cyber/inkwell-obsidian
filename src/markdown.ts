@@ -21,6 +21,17 @@ export function renderMarkdown(md: string): string {
         if (idx === -1) return `<span class="fm-item fm-plain">${esc(line)}</span>`;
         const key = line.substring(0, idx).trim();
         let val = line.substring(idx + 1).trim();
+        // Strip surrounding quotes: "value" or 'value'
+        if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
+          val = val.slice(1, -1);
+        }
+        // YAML array [a, b, c] → render as tag chips
+        if (val.startsWith('[') && val.endsWith(']')) {
+          const inner = val.slice(1, -1);
+          const tags = inner.split(',').map((t) => t.trim()).filter(Boolean);
+          const chips = tags.map((t) => `<span class="fm-tag">${esc(t)}</span>`).join(' ');
+          return `<span class="fm-item"><span class="fm-key">${esc(key)}</span><span class="fm-val">${chips}</span></span>`;
+        }
         if (val.length > MAX_FM_VAL_LEN) {
           val = val.substring(0, MAX_FM_VAL_LEN) + '\u2026';
         }
