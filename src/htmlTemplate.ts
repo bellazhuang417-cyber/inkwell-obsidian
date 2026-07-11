@@ -61,11 +61,12 @@ export function buildMarkdownDoc(renderedHtml: string): string {
   .wikilink { color: var(--brand); background: rgba(27,54,93,0.07); padding: 1px 5px; border-radius: 3px; cursor: pointer; font-weight: 500; }
   @keyframes fadeIn { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
   body { animation: fadeIn 0.4s ease-out; }
-  .frontmatter { background: var(--ivory); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 1.5em; display: flex; flex-wrap: wrap; gap: 6px 24px; font-size: 0.88em; }
-  .fm-item { display: inline-flex; align-items: baseline; gap: 6px; }
+  .frontmatter { background: var(--ivory); border: 1px solid var(--border); border-radius: 8px; padding: 14px 20px; margin-bottom: 1.5em; display: flex; flex-direction: column; gap: 6px; font-size: 0.88em; }
+  .fm-item { display: flex; align-items: baseline; gap: 8px; }
   .fm-plain { color: var(--dark-warm); }
-  .fm-key { color: var(--stone); font-weight: 500; min-width: 52px; text-align: right; }
-  .fm-val { color: var(--dark-warm); }
+  .fm-key { color: var(--stone); font-weight: 500; min-width: 60px; text-align: right; flex-shrink: 0; }
+  .fm-val { color: var(--dark-warm); word-break: break-word; }
+  .fm-tag { display: inline-block; color: var(--brand-light); background: rgba(45,90,138,0.08); padding: 1px 8px; border-radius: 4px; font-size: 0.92em; margin: 1px 2px; }
   .tag { color: var(--brand-light); background: rgba(45,90,138,0.08); padding: 1px 6px; border-radius: 4px; font-size: 0.9em; white-space: nowrap; }
   h3.section-num { color: var(--near-black); font-size: 1.2em; margin-top: 1.8em; margin-bottom: 0.4em; padding-bottom: 0.15em; border-bottom: 1px solid var(--warm-sand); }
   li.indent-1, li.indent-2, li.indent-3 { list-style-position: outside; }
