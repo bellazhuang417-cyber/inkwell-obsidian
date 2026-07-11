@@ -1,7 +1,7 @@
 {
   "id": "inkwell",
   "name": "Inkwell",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "minAppVersion": "1.1.16",
   "description": "Native HTML / Markdown / YAML reader inside Obsidian. Render local .html files exactly as in a browser via a sandboxed iframe, browse a unified file tree, and view backlinks — bringing Inkwell's multi-format reader into your vault.",
   "author": "Bella Zhuang",
