@@ -1,0 +1,28 @@
+{
+  "name": "inkwell",
+  "version": "0.2.0",
+  "description": "Native HTML / Markdown / YAML reader inside Obsidian — a faithful port of the Inkwell desktop app as an Obsidian plugin.",
+  "main": "main.js",
+  "scripts": {
+    "dev": "node esbuild.config.mjs",
+    "build": "tsc -noEmit -skipLibCheck && node esbuild.config.mjs production",
+    "version": "node version-bump.mjs"
+  },
+  "keywords": [
+    "obsidian",
+    "obsidian-plugin",
+    "html",
+    "markdown",
+    "yaml",
+    "reader",
+    "inkwell"
+  ],
+  "author": "Bella Zhuang",
+  "license": "MIT",
+  "devDependencies": {
+    "builtin-modules": "^4.0.0",
+    "esbuild": "^0.25.0",
+    "obsidian": "^1.7.2",
+    "typescript": "^5.5.4"
+  }
+}

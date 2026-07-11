@@ -1,0 +1,567 @@
+/* ================================================================
+   Inkwell — Obsidian plugin styles
+   All rules are scoped under `.inkwell` / `.inkwell-search-modal`
+   so they never leak into Obsidian's global theme. Design tokens
+   mirror the Inkwell desktop app (warm-white + amber + serif).
+   ================================================================ */
+
+.inkwell {
+  --iw-bg: #FAFAF7;
+  --iw-bg-alt: #F5F3EE;
+  --iw-bg-hover: #EFEDE6;
+  --iw-bg-active: #E8E5DF;
+  --iw-surface: #FFFFFF;
+  --iw-border: #E8E5DF;
+  --iw-border-light: #F0EDE8;
+  --iw-text-primary: #1A1A2E;
+  --iw-text-secondary: #5C5C6E;
+  --iw-text-tertiary: #9494A6;
+  --iw-text-link: #C5792A;
+  --iw-accent: #E8913A;
+  --iw-accent-hover: #D17F2E;
+  --iw-accent-subtle: #FDF0E3;
+  --iw-secondary: #7C9A6E;
+  --iw-secondary-subtle: #F0F4ED;
+  --iw-info: #5B7FAA;
+  --iw-error: #D15252;
+  --iw-code-bg: #F8F7F4;
+
+  --iw-font-ui: "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --iw-font-code: "JetBrains Mono", "SF Mono", Menlo, monospace;
+
+  --iw-space-1: 4px;
+  --iw-space-2: 8px;
+  --iw-space-3: 12px;
+  --iw-space-4: 16px;
+  --iw-space-6: 24px;
+  --iw-space-8: 32px;
+
+  --iw-radius-sm: 4px;
+  --iw-radius-md: 6px;
+  --iw-radius-lg: 8px;
+  --iw-radius-full: 9999px;
+
+  --iw-duration-fast: 120ms;
+
+  --iw-tree-indent: 16px;
+
+  --iw-z-overlay: 300;
+
+  height: 100%;
+  width: 100%;
+  font-family: var(--iw-font-ui);
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--iw-text-primary);
+  background: var(--iw-bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Dark theme: when Obsidian is in dark mode, soften to a warm-dark. */
+.theme-dark .inkwell {
+  --iw-bg: #1e1d1a;
+  --iw-bg-alt: #242320;
+  --iw-bg-hover: #2c2a26;
+  --iw-bg-active: #34322d;
+  --iw-surface: #26241f;
+  --iw-border: #3a3833;
+  --iw-border-light: #322f2b;
+  --iw-text-primary: #ece8e0;
+  --iw-text-secondary: #b3aea2;
+  --iw-text-tertiary: #7d7870;
+  --iw-accent: #E8913A;
+  --iw-accent-subtle: #3a2c1c;
+  --iw-secondary: #8fb07e;
+  --iw-secondary-subtle: #2a3325;
+  --iw-code-bg: #161512;
+}
+
+.inkwell * {
+  box-sizing: border-box;
+}
+
+.inkwell ::-webkit-scrollbar { width: 6px; height: 6px; }
+.inkwell ::-webkit-scrollbar-track { background: transparent; }
+.inkwell ::-webkit-scrollbar-thumb { background: var(--iw-border); border-radius: var(--iw-radius-full); }
+
+/* ---- Root layout ---- */
+.inkwell-root {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.inkwell-topbar {
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 var(--iw-space-4);
+  background: var(--iw-surface);
+  border-bottom: 1px solid var(--iw-border);
+  user-select: none;
+}
+.inkwell-topbar-title {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-2);
+  font-size: 14px;
+  font-weight: 600;
+}
+.inkwell-logo-dot {
+  width: 8px; height: 8px; border-radius: 50%;
+  background: var(--iw-accent);
+}
+.inkwell-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-1);
+}
+
+.inkwell-main {
+  flex: 1;
+  display: flex;
+  overflow: hidden;
+  min-height: 0;
+}
+
+/* ---- Sidebar ---- */
+.inkwell-sidebar {
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--iw-bg-alt);
+  border-right: 1px solid var(--iw-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.inkwell-sidebar-header {
+  padding: var(--iw-space-3) var(--iw-space-4);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--iw-text-tertiary);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.inkwell-sidebar-btns {
+  display: flex;
+  gap: var(--iw-space-1);
+}
+.inkwell-sidebar-tree {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: var(--iw-space-1) 0;
+}
+.inkwell-tree-empty,
+.inkwell-tree-error {
+  padding: var(--iw-space-8) var(--iw-space-4);
+  text-align: center;
+  color: var(--iw-text-tertiary);
+  font-size: 12px;
+}
+
+/* ---- Sidebar resizer ---- */
+.inkwell-sidebar-resizer {
+  width: 4px;
+  height: 100%;
+  cursor: col-resize;
+  background: transparent;
+  transition: background var(--iw-duration-fast);
+  flex-shrink: 0;
+}
+.inkwell-sidebar-resizer:hover,
+.inkwell-sidebar-resizer:active {
+  background: var(--iw-accent);
+}
+
+/* ---- Tree nodes ---- */
+.inkwell-tree-node {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-2);
+  padding: var(--iw-space-1) var(--iw-space-2);
+  margin: 0 var(--iw-space-1);
+  border-radius: var(--iw-radius-sm);
+  cursor: pointer;
+  transition: background var(--iw-duration-fast);
+  user-select: none;
+  font-size: 13px;
+  color: var(--iw-text-secondary);
+  height: 30px;
+}
+.inkwell-tree-node:hover { background: var(--iw-bg-hover); color: var(--iw-text-primary); }
+.inkwell-tree-node.active { background: var(--iw-accent-subtle); color: var(--iw-text-primary); font-weight: 500; }
+
+.inkwell-tree-arrow {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  color: var(--iw-text-tertiary);
+  transition: transform var(--iw-duration-fast);
+}
+.inkwell-tree-arrow svg { width: 12px; height: 12px; }
+.inkwell-tree-arrow.expanded { transform: rotate(90deg); }
+.inkwell-tree-arrow-spacer { width: 12px; flex-shrink: 0; }
+
+.inkwell-tree-icon { flex-shrink: 0; display: flex; align-items: center; }
+.inkwell-tree-icon svg { width: 16px; height: 16px; }
+.inkwell-tree-icon.html { color: var(--iw-accent); }
+.inkwell-tree-icon.md { color: var(--iw-secondary); }
+.inkwell-tree-icon.yaml { color: var(--iw-info); }
+.inkwell-tree-icon.folder { color: var(--iw-text-tertiary); }
+.inkwell-tree-icon.other { color: var(--iw-text-tertiary); }
+
+.inkwell-tree-name {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- Content ---- */
+.inkwell-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+.inkwell-content-body {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.inkwell-render-meta {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--iw-space-2) var(--iw-space-4);
+  background: var(--iw-surface);
+  border-bottom: 1px solid var(--iw-border-light);
+}
+.inkwell-render-meta-info {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-2);
+}
+.inkwell-render-meta-icon { display: flex; }
+.inkwell-render-meta-icon.html { color: var(--iw-accent); }
+.inkwell-render-meta-icon.md { color: var(--iw-secondary); }
+.inkwell-render-meta-icon.yaml { color: var(--iw-info); }
+.inkwell-render-meta-icon svg { width: 14px; height: 14px; }
+.inkwell-render-filename { font-size: 13px; font-weight: 500; }
+.inkwell-render-badge {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--iw-secondary);
+  background: var(--iw-secondary-subtle);
+  padding: 2px 8px;
+  border-radius: var(--iw-radius-sm);
+  transition: color var(--iw-duration-fast), background var(--iw-duration-fast);
+}
+.inkwell-render-badge.dirty {
+  color: var(--iw-accent);
+  background: var(--iw-accent-subtle);
+}
+.inkwell-render-badge.saved {
+  color: var(--iw-secondary);
+  background: var(--iw-secondary-subtle);
+}
+.inkwell-render-meta-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-1);
+}
+.inkwell-render-meta-actions .inkwell-view-btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+.inkwell-source-area:focus {
+  outline: none;
+  box-shadow: inset 0 0 0 2px var(--iw-accent-subtle);
+}
+
+.inkwell-render-scroll {
+  flex: 1;
+  overflow: auto;
+  display: flex;
+  justify-content: center;
+  padding: var(--iw-space-6) var(--iw-space-8);
+  background: var(--iw-bg);
+}
+.inkwell-render-iframe {
+  width: 100%;
+  height: 100%;
+  min-height: 400px;
+  border: none;
+  background: var(--iw-surface);
+  border-radius: var(--iw-radius-lg);
+}
+.inkwell-source-area {
+  width: 100%;
+  height: 100%;
+  border: none;
+  outline: none;
+  resize: none;
+  padding: var(--iw-space-6) var(--iw-space-8);
+  font-family: var(--iw-font-code);
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--iw-text-primary);
+  background: var(--iw-surface);
+}
+
+/* ---- Empty state ---- */
+.inkwell-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: var(--iw-space-8);
+  text-align: center;
+}
+.inkwell-empty-icon { color: var(--iw-border); margin-bottom: var(--iw-space-6); }
+.inkwell-empty-icon svg { width: 64px; height: 64px; }
+.inkwell-empty-title { font-size: 18px; font-weight: 600; margin-bottom: var(--iw-space-2); }
+.inkwell-empty-desc { font-size: 14px; color: var(--iw-text-secondary); max-width: 400px; line-height: 1.65; }
+.inkwell-empty-desc kbd {
+  font-family: var(--iw-font-code);
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--iw-bg-alt);
+  border: 1px solid var(--iw-border);
+  border-radius: 3px;
+}
+
+/* ---- Bottom bar ---- */
+.inkwell-bottombar {
+  height: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  background: var(--iw-surface);
+  border-top: 1px solid var(--iw-border);
+  padding: 0 var(--iw-space-2);
+}
+.inkwell-bottombar.hidden { display: none; }
+.inkwell-bottombar-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-2);
+  padding: 0 var(--iw-space-2);
+}
+.inkwell-doc-nav-info {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-1);
+  font-size: 11px;
+  color: var(--iw-text-tertiary);
+}
+.inkwell-doc-nav-folder { display: flex; align-items: center; gap: var(--iw-space-1); }
+.inkwell-doc-nav-folder svg { width: 12px; height: 12px; }
+.inkwell-doc-nav-position {
+  font-weight: 600;
+  color: var(--iw-text-secondary);
+  font-family: var(--iw-font-code);
+  font-size: 10px;
+  background: var(--iw-bg-alt);
+  padding: 1px 6px;
+  border-radius: var(--iw-radius-full);
+}
+.inkwell-doc-nav-controls { display: flex; align-items: center; gap: 2px; }
+.inkwell-doc-nav-btn {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-1);
+  padding: 3px 10px;
+  border: 1px solid transparent;
+  border-radius: var(--iw-radius-md);
+  background: transparent;
+  color: var(--iw-text-secondary);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background var(--iw-duration-fast);
+  white-space: nowrap;
+}
+.inkwell-doc-nav-btn:hover { background: var(--iw-bg-hover); color: var(--iw-text-primary); }
+.inkwell-doc-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; pointer-events: none; }
+.inkwell-doc-nav-btn svg { width: 12px; height: 12px; }
+.inkwell-doc-nav-btn kbd {
+  font-family: var(--iw-font-code);
+  font-size: 9px;
+  padding: 0 3px;
+  background: var(--iw-bg-alt);
+  border: 1px solid var(--iw-border);
+  border-radius: 3px;
+}
+.inkwell-bottombar-sep {
+  width: 1px; height: 20px;
+  background: var(--iw-border);
+  margin: 0 var(--iw-space-1);
+  flex-shrink: 0;
+}
+.inkwell-bottombar-views { display: flex; align-items: center; gap: 1px; margin-left: auto; }
+
+.inkwell-view-btn {
+  padding: var(--iw-space-1) var(--iw-space-2);
+  border: none;
+  border-radius: var(--iw-radius-md);
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--iw-text-tertiary);
+  background: transparent;
+  cursor: pointer;
+  transition: background var(--iw-duration-fast);
+  white-space: nowrap;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--iw-space-1);
+}
+.inkwell-view-btn svg { width: 14px; height: 14px; }
+.inkwell-view-btn:hover { background: var(--iw-bg-hover); color: var(--iw-text-secondary); }
+.inkwell-view-btn.active { background: var(--iw-accent-subtle); color: var(--iw-accent); }
+
+/* ---- Right panel ---- */
+.inkwell-right-panel {
+  width: 280px;
+  flex-shrink: 0;
+  height: 100%;
+  background: var(--iw-bg-alt);
+  border-left: 1px solid var(--iw-border);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+.inkwell-right-panel.hidden { display: none; }
+.inkwell-panel-header {
+  padding: var(--iw-space-3) var(--iw-space-4);
+  font-size: 14px;
+  font-weight: 600;
+  border-bottom: 1px solid var(--iw-border);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.inkwell-panel-header .inkwell-view-btn svg { width: 14px; height: 14px; }
+.inkwell-panel-tabs { display: flex; border-bottom: 1px solid var(--iw-border); }
+.inkwell-panel-tab {
+  flex: 1;
+  padding: var(--iw-space-2) var(--iw-space-3);
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--iw-text-tertiary);
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid transparent;
+  cursor: pointer;
+  text-align: center;
+}
+.inkwell-panel-tab:hover { color: var(--iw-text-secondary); }
+.inkwell-panel-tab.active { color: var(--iw-accent); border-bottom-color: var(--iw-accent); }
+.inkwell-panel-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--iw-space-2) 0;
+}
+.inkwell-panel-hint {
+  padding: var(--iw-space-6) var(--iw-space-4);
+  text-align: center;
+  color: var(--iw-text-tertiary);
+  font-size: 12px;
+}
+
+.inkwell-backlink-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--iw-space-1);
+  padding: var(--iw-space-3) var(--iw-space-4);
+  border-bottom: 1px solid var(--iw-border-light);
+  cursor: pointer;
+  transition: background var(--iw-duration-fast);
+}
+.inkwell-backlink-card:hover { background: var(--iw-bg-hover); }
+.inkwell-backlink-name { font-size: 13px; font-weight: 600; color: var(--iw-text-primary); }
+.inkwell-backlink-context { font-size: 12px; color: var(--iw-text-secondary); line-height: 1.5; }
+.inkwell-backlink-path { font-size: 11px; color: var(--iw-text-tertiary); }
+
+.inkwell-tag-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--iw-space-2);
+  padding: var(--iw-space-4);
+}
+.inkwell-tag-chip {
+  color: var(--iw-info);
+  background: rgba(91, 127, 170, 0.08);
+  padding: 2px 8px;
+  border-radius: var(--iw-radius-sm);
+  font-size: 12px;
+}
+
+/* ---- Search modal ---- */
+.inkwell-search-modal {
+  width: var(--ink-search-width, 560px);
+  max-width: 90vw;
+  padding: 0;
+  overflow: hidden;
+}
+.inkwell-search-modal .modal-close-button { display: none; }
+.inkwell-search-input-wrapper {
+  display: flex;
+  align-items: center;
+  padding: var(--iw-space-3) var(--iw-space-4);
+  gap: var(--iw-space-3);
+  border-bottom: 1px solid var(--iw-border-light);
+}
+.inkwell-search-icon { color: var(--iw-text-tertiary); display: flex; }
+.inkwell-search-icon svg { width: 20px; height: 20px; }
+.inkwell-search-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 16px;
+  background: transparent;
+  color: var(--iw-text-primary);
+}
+.inkwell-search-input::placeholder { color: var(--iw-text-tertiary); }
+.inkwell-search-input-wrapper kbd {
+  font-family: var(--iw-font-code);
+  font-size: 10px;
+  padding: 1px 5px;
+  background: var(--iw-bg-alt);
+  border: 1px solid var(--iw-border);
+  border-radius: 3px;
+  cursor: pointer;
+}
+.inkwell-search-results { max-height: 360px; overflow-y: auto; }
+.inkwell-search-empty { padding: var(--iw-space-6); text-align: center; color: var(--iw-text-tertiary); }
+.inkwell-search-item {
+  display: flex;
+  align-items: center;
+  gap: var(--iw-space-3);
+  padding: var(--iw-space-3) var(--iw-space-4);
+  cursor: pointer;
+  transition: background var(--iw-duration-fast);
+}
+.inkwell-search-item:hover,
+.inkwell-search-item.selected { background: var(--iw-bg-hover); }
+.inkwell-search-item-icon { flex-shrink: 0; display: flex; }
+.inkwell-search-item-icon svg { width: 16px; height: 16px; }
+.inkwell-search-item-icon.html { color: var(--iw-accent); }
+.inkwell-search-item-icon.md { color: var(--iw-secondary); }
+.inkwell-search-item-icon.yaml { color: var(--iw-info); }
+.inkwell-search-item-info { flex: 1; min-width: 0; }
+.inkwell-search-item-name { font-size: 13px; font-weight: 500; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.inkwell-search-item-path { font-size: 11px; color: var(--iw-text-tertiary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
