@@ -6,8 +6,6 @@ import type InkwellPlugin from './main';
 export interface InkwellSettings {
   /** Default subfolder to scope the file tree (empty = whole vault). */
   defaultFolder: string;
-  /** Start with the right references panel open. */
-  rightPanelOpen: boolean;
   /** Default to showing only HTML files in the tree. */
   htmlOnlyByDefault: boolean;
   /** Sandbox mode for the HTML iframe: full (scripts+same-origin), scripts, or none. */
@@ -24,7 +22,6 @@ export interface InkwellSettings {
 
 export const DEFAULT_SETTINGS: InkwellSettings = {
   defaultFolder: '',
-  rightPanelOpen: true,
   htmlOnlyByDefault: false,
   sandboxMode: 'full',
   refreshDebounce: 1000,
@@ -60,18 +57,6 @@ export class InkwellSettingTab extends PluginSettingTab {
           .setValue(this.plugin.settings.defaultFolder)
           .onChange(async (value) => {
             this.plugin.settings.defaultFolder = value.trim();
-            await this.plugin.saveSettings();
-          }),
-      );
-
-    new Setting(containerEl)
-      .setName('Open references panel on launch')
-      .setDesc('Show the backlinks / outlinks / tags panel by default.')
-      .addToggle((toggle) =>
-        toggle
-          .setValue(this.plugin.settings.rightPanelOpen)
-          .onChange(async (value) => {
-            this.plugin.settings.rightPanelOpen = value;
             await this.plugin.saveSettings();
           }),
       );
