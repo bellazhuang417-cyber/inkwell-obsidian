@@ -3,7 +3,7 @@
 // in a sandboxed iframe, with a file tree, doc navigation, and a references
 // panel.
 
-import { Plugin, WorkspaceLeaf, TFile, addIcon } from 'obsidian';
+import { Plugin, WorkspaceLeaf, TFile } from 'obsidian';
 import { InkwellView, INKWELL_VIEW_TYPE } from './InkwellView';
 import { InkwellSettingTab, InkwellSettings, DEFAULT_SETTINGS } from './settings';
 import { extOf, classifyFile, RENDERABLE_EXTS } from './types';
@@ -14,17 +14,11 @@ export default class InkwellPlugin extends Plugin {
   async onload(): Promise<void> {
     await this.loadSettings();
 
-    // A simple quill-like glyph for the ribbon.
-    addIcon(
-      'inkwell',
-      `<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"/><path d="M16 8 2 22"/><path d="M17.5 15H9"/></svg>`,
-    );
-
     // Register the view.
     this.registerView(INKWELL_VIEW_TYPE, (leaf) => new InkwellView(leaf, this));
 
     // Ribbon icon to open the reader.
-    this.addRibbonIcon('inkwell', 'Open Inkwell', () => {
+    this.addRibbonIcon('book-open', 'Open Inkwell', () => {
       void this.activateView();
     });
 
