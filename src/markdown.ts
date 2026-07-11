@@ -8,11 +8,13 @@
 export function renderMarkdown(md: string): string {
   let html = md;
 
-  // === 1. YAML Frontmatter: detect and render as meta panel ===
+  // === 1. YAML Frontmatter: detect, render as meta panel, and PROTECT from
+  //         all subsequent regex passes by replacing with a placeholder. ===
   const MAX_FM_VAL_LEN = 80;
+  const fmStore: string[] = [];
   html = html.replace(/^---\n([\s\S]*?)\n---\n*/g, (_m: string, fm: string) => {
     const lines = fm.trim().split('\n').filter(Boolean);
-    if (lines.length === 0) return '';
+    if (lines.length === 0) return '\n\n';
     const items = lines
       .map((line: string) => {
         const idx = line.indexOf(':');
@@ -25,7 +27,10 @@ export function renderMarkdown(md: string): string {
         return `<span class="fm-item"><span class="fm-key">${esc(key)}</span><span class="fm-val">${esc(val)}</span></span>`;
       })
       .join('');
-    return `<div class="frontmatter">${items}</div>`;
+    const fmHtml = `<div class="frontmatter">${items}</div>`;
+    const placeholder = `<div data-fm="${fmStore.length}"></div>`;
+    fmStore.push(fmHtml);
+    return placeholder + '\n\n';
   });
 
   // === 2. Fenced code blocks — protect inner content ===
@@ -135,6 +140,9 @@ export function renderMarkdown(md: string): string {
   // === 17. Smart paragraph wrapping ===
   html = wrapParagraphs(html);
 
+  // === 18. Restore protected frontmatter HTML ===
+  html = html.replace(/<div data-fm="(\d+)"><\/div>/g, (_m, idx) => fmStore[Number(idx)] || '');
+
   return html;
 }
 
@@ -200,7 +208,10 @@ function buildGFMTable(lines: string[]): string {
 /** Split text before bullet markers that appear mid-line (Chinese export format). */
 function textSplitBeforeBullets(text: string): string {
   return text
-    .replace(/([^\n\s])(\s*)([\u2022\u25e6\u25cb\u00b7])/g, (_m, before: string, space: string, bullet: string) => `${before}\n${space}${bullet}`)
+    // Only split before a bullet char when it's followed by whitespace —
+    // this prevents splitting Chinese name separators like "陈海贤·自我发展心理学"
+    // where · (U+00B7) is used as an interpunct, not a bullet.
+    .replace(/([^\n\s])(\s*)([\u2022\u25e6\u25cb\u00b7])(?=\s)/g, (_m, before: string, space: string, bullet: string) => `${before}\n${space}${bullet}`)
     .replace(/\n{2,}/g, '\n');
 }
 
