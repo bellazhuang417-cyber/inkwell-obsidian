@@ -1,5 +1,4 @@
-# Obsidian plugin build artifacts
-main.js
+# Obsidian plugin — main.js IS committed for direct installation
 *.js.map
 node_modules/
 data.json
