@@ -158,9 +158,10 @@ function folderOf(filePath) {
 function renderMarkdown(md) {
   let html = md;
   const MAX_FM_VAL_LEN = 80;
+  const fmStore = [];
   html = html.replace(/^---\n([\s\S]*?)\n---\n*/g, (_m, fm) => {
     const lines = fm.trim().split("\n").filter(Boolean);
-    if (lines.length === 0) return "";
+    if (lines.length === 0) return "\n\n";
     const items = lines.map((line) => {
       const idx = line.indexOf(":");
       if (idx === -1) return `<span class="fm-item fm-plain">${esc(line)}</span>`;
@@ -171,7 +172,10 @@ function renderMarkdown(md) {
       }
       return `<span class="fm-item"><span class="fm-key">${esc(key)}</span><span class="fm-val">${esc(val)}</span></span>`;
     }).join("");
-    return `<div class="frontmatter">${items}</div>`;
+    const fmHtml = `<div class="frontmatter">${items}</div>`;
+    const placeholder = `<div data-fm="${fmStore.length}"></div>`;
+    fmStore.push(fmHtml);
+    return placeholder + "\n\n";
   });
   html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (_m, lang, code) => {
     const escaped = code.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
@@ -238,6 +242,7 @@ function renderMarkdown(md) {
   html = renderGFMTables(html);
   html = wrapListItems(html);
   html = wrapParagraphs(html);
+  html = html.replace(/<div data-fm="(\d+)"><\/div>/g, (_m, idx) => fmStore[Number(idx)] || "");
   return html;
 }
 function renderGFMTables(text) {
@@ -290,7 +295,7 @@ function buildGFMTable(lines) {
   return html;
 }
 function textSplitBeforeBullets(text) {
-  return text.replace(/([^\n\s])(\s*)([\u2022\u25e6\u25cb\u00b7])/g, (_m, before, space, bullet) => `${before}
+  return text.replace(/([^\n\s])(\s*)([\u2022\u25e6\u25cb\u00b7])(?=\s)/g, (_m, before, space, bullet) => `${before}
 ${space}${bullet}`).replace(/\n{2,}/g, "\n");
 }
 function wrapListItems(text) {
