@@ -1,6 +1,6 @@
 {
   "name": "inkwell",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Native HTML / Markdown / YAML reader inside Obsidian — a faithful port of the Inkwell desktop app as an Obsidian plugin.",
   "main": "main.js",
   "scripts": {
